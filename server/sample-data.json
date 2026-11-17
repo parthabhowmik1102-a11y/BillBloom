@@ -1,0 +1,41 @@
+{
+  "businesses": [
+    { "name": "Kiran General Store", "owner": "Meera Shah", "gstin": "27AAECK1234D1Z7", "address": "22 Market Lane, Pune, Maharashtra 411002", "phone": "+91 98220 11223", "email": "billing@kirangeneral.in", "state": "Maharashtra", "upi": "kirandemo@upi", "logoData": "", "logoText": "KG" },
+    { "name": "Northstar Web Studio", "owner": "Nisha Rao", "gstin": "29AAGFN7284P1Z2", "address": "18 Residency Road, Bengaluru, Karnataka 560025", "phone": "+91 98100 44556", "email": "hello@northstarstudio.in", "state": "Karnataka", "upi": "northstar.demo@upi", "logoData": "", "logoText": "NW" },
+    { "name": "Sharma Electronics", "owner": "Rohit Sharma", "gstin": "27AABCU9603R1ZM", "address": "14 MG Road, Pune, Maharashtra 411001", "phone": "+91 98765 43210", "email": "accounts@sharmaelectronics.in", "state": "Maharashtra", "upi": "sharma.demo@upi", "logoData": "", "logoText": "SE" }
+  ],
+  "customers": [
+    { "id": "cus-sharma", "name": "Sharma Electronics", "email": "accounts@sharmaelectronics.in", "phone": "+91 98765 43210", "gstin": "27AABCU9603R1ZM", "address": "14 MG Road, Pune, Maharashtra 411001", "state": "Maharashtra" },
+    { "id": "cus-kirana", "name": "Kiran Store", "email": "billing@kiranstore.in", "phone": "+91 98220 11223", "gstin": "27AABCK1234D1Z7", "address": "22 Market Lane, Pune, Maharashtra 411002", "state": "Maharashtra" },
+    { "id": "cus-studio", "name": "Northstar Web Studio", "email": "hello@northstarstudio.in", "phone": "+91 98100 44556", "gstin": "07AAGFN7284P1Z2", "address": "18 Connaught Place, New Delhi 110001", "state": "Delhi" },
+    { "id": "cus-bluebird", "name": "Bluebird Hardware", "email": "orders@bluebirdhardware.in", "phone": "+91 98111 22334", "gstin": "07AABCB2201G1Z5", "address": "41 Nehru Place, New Delhi 110019", "state": "Delhi" },
+    { "id": "cus-greenfield", "name": "Greenfield Grocers", "email": "accounts@greenfieldgrocers.in", "phone": "+91 98450 66778", "gstin": "29AACCG3102D1Z8", "address": "9 Jayanagar 4th Block, Bengaluru 560011", "state": "Karnataka" },
+    { "id": "cus-pixelcraft", "name": "PixelCraft Agency", "email": "finance@pixelcraft.in", "phone": "+91 98200 44556", "gstin": "27AAEFP4472J1Z4", "address": "301 Andheri East, Mumbai 400069", "state": "Maharashtra" },
+    { "id": "cus-narmada", "name": "Narmada Stationers", "email": "billing@narmadastationers.in", "phone": "+91 98930 11220", "gstin": "23AAQFN1120F1Z6", "address": "12 AB Road, Indore, Madhya Pradesh 452001", "state": "Madhya Pradesh" },
+    { "id": "cus-aster", "name": "Aster Office Supplies", "email": "orders@asteroffice.in", "phone": "+91 98451 22334", "gstin": "29AACCA4820H1Z4", "address": "5 MG Road, Bengaluru, Karnataka 560001", "state": "Karnataka" },
+    { "id": "cus-maple", "name": "Maple Cafe", "email": "hello@maplecafe.in", "phone": "+91 98920 55443", "gstin": "27AAKFM3021M1Z9", "address": "7 Koregaon Park, Pune, Maharashtra 411001", "state": "Maharashtra" },
+    { "id": "cus-orbit", "name": "Orbit Repairs", "email": "service@orbitrepairs.in", "phone": "+91 98330 77881", "gstin": "27AAEFO3910Q1Z2", "address": "62 Dadar West, Mumbai, Maharashtra 400028", "state": "Maharashtra" }
+  ],
+  "products": [
+    { "name": "Laptop repair", "description": "Laptop diagnostics and repair service", "hsn": "998713", "unit": "service", "price": 1200, "gst": 18 },
+    { "name": "HDMI cable", "description": "2 metre high-speed HDMI cable", "hsn": "854442", "unit": "pcs", "price": 450, "gst": 18 },
+    { "name": "SSD 512 GB", "description": "NVMe solid-state drive, 512 GB", "hsn": "852351", "unit": "pcs", "price": 3200, "gst": 18 },
+    { "name": "Wireless mouse", "description": "Ergonomic wireless optical mouse", "hsn": "847160", "unit": "pcs", "price": 650, "gst": 18 },
+    { "name": "Keyboard", "description": "USB full-size keyboard", "hsn": "847160", "unit": "pcs", "price": 850, "gst": 18 },
+    { "name": "USB-C charger", "description": "65 W USB-C power adapter", "hsn": "850440", "unit": "pcs", "price": 1450, "gst": 18 },
+    { "name": "Phone screen guard", "description": "Tempered glass screen protector", "hsn": "700719", "unit": "pcs", "price": 250, "gst": 18 },
+    { "name": "Printer service", "description": "Printer cleaning and maintenance", "hsn": "998713", "unit": "service", "price": 900, "gst": 18 },
+    { "name": "Web design", "description": "Responsive small-business website design", "hsn": "998314", "unit": "project", "price": 12000, "gst": 18 },
+    { "name": "Domain setup", "description": "Domain registration and DNS setup", "hsn": "998315", "unit": "service", "price": 1500, "gst": 18 },
+    { "name": "Wi-Fi router", "description": "Dual-band wireless router", "hsn": "851762", "unit": "pcs", "price": 2200, "gst": 18 },
+    { "name": "Ethernet cable", "description": "Cat 6 ethernet cable, 5 metre", "hsn": "854449", "unit": "pcs", "price": 300, "gst": 18 },
+    { "name": "Power bank", "description": "10,000 mAh portable power bank", "hsn": "850760", "unit": "pcs", "price": 1600, "gst": 18 },
+    { "name": "USB flash drive", "description": "64 GB USB 3.0 flash drive", "hsn": "852351", "unit": "pcs", "price": 550, "gst": 18 },
+    { "name": "Laptop stand", "description": "Adjustable aluminium laptop stand", "hsn": "761699", "unit": "pcs", "price": 1100, "gst": 18 },
+    { "name": "Annual maintenance", "description": "Annual hardware maintenance visit", "hsn": "998719", "unit": "service", "price": 5000, "gst": 18 },
+    { "name": "Notebook", "description": "A5 ruled notebook", "hsn": "482010", "unit": "pcs", "price": 80, "gst": 12 },
+    { "name": "Packing supplies", "description": "Retail packing material bundle", "hsn": "481910", "unit": "bundle", "price": 180, "gst": 12 },
+    { "name": "Basic consultation", "description": "Business technology consultation", "hsn": "998312", "unit": "hour", "price": 750, "gst": 18 },
+    { "name": "Data backup", "description": "Secure data backup and recovery", "hsn": "998313", "unit": "service", "price": 2500, "gst": 18 }
+  ]
+}

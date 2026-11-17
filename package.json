@@ -1,0 +1,37 @@
+{
+  "name": "billbloom-srs-project",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "vite --host 127.0.0.1",
+    "dev:server": "node --watch server/index.js",
+    "build": "vite build",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "@signpdf/placeholder-pdf-lib": "^4.0.0",
+    "@signpdf/signer-p12": "^4.0.0",
+    "@signpdf/signpdf": "^4.0.0",
+    "@tailwindcss/vite": "^4.1.11",
+    "express": "^5.1.0",
+    "html2pdf.js": "^0.14.0",
+    "jspdf": "^4.2.1",
+    "node-forge": "^1.4.3",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router": "^8.5.1",
+    "tailwindcss": "^4.1.11"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.2.0",
+    "vite": "^6.3.5"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}
