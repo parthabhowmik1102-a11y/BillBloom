@@ -134,3 +134,15 @@ git config --global user.email "you@example.com"
 ```
 
 GitHub may open a browser sign-in or ask you to authenticate before the first push. Never commit passwords, access tokens, or the local SQLite database.
+
+## Publish the website with GitHub Pages
+
+This is a Vite application with an Express/SQLite API. GitHub Pages hosts static files only, so the Pages build uses a browser-storage mode for its sample workspace. In that published version, data stays in the current browser and device, and invoice PDFs are not digitally signed. Use the local Node.js server for the full SQLite and PDF-signing features.
+
+1. Commit and push the project changes to the `main` branch.
+2. In the GitHub repository, open **Settings → Pages**.
+3. Under **Build and deployment → Source**, select **GitHub Actions**. Do not choose **Deploy from a branch** for this Vite source project.
+4. Open the **Actions** tab and wait for **Deploy BillBloom to GitHub Pages** to finish successfully.
+5. Open `https://parthabhowmik1102-a11y.github.io/BillBloom/` and refresh the page.
+
+The workflow builds the Vite app with the correct `/BillBloom/` asset path, runs the tests, and deploys the generated `dist` directory. GitHub Pages needs a custom Actions workflow for this build-and-deploy setup. See [GitHub's Pages publishing-source guide](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).

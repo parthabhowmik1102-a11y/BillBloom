@@ -4,6 +4,7 @@ import Dashboard from './Dashboard.jsx';
 import InvoiceEditor, { makeInvoice, invoiceTotals } from './InvoiceEditor.jsx';
 import { Analytics, Customers, Products, CustomerForm, BusinessProfile, AccountProfile } from './Directory.jsx';
 import { AppContext } from './AppContext.jsx';
+import { apiFetch, STATIC_HOSTING } from './static-api.js';
 import './styles.css';
 
 const navigation = [
@@ -28,7 +29,7 @@ export default function App() {
   const [selectedCustomer, setSelectedCustomer] = useState('');
 
   async function refresh() {
-    const response = await fetch('/api/bootstrap');
+    const response = await apiFetch('/api/bootstrap');
     if (!response.ok) throw new Error('The local API did not respond. Check the VS Code terminal.');
     setData(await response.json());
   }
@@ -54,18 +55,18 @@ export default function App() {
     if (!invoice.items.length || invoice.items.some((item) => !item.name.trim())) { setNotice('Add at least one named line item.'); return; }
     const payload = { ...invoice, ...totals, customerName: customer?.name || '', customerSnapshot: customer, businessSnapshot: invoice.businessSnapshot || data.business, updatedAt: new Date().toISOString() };
     try {
-      const res = await fetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await apiFetch('/api/invoices', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Could not save invoice.');
       await refresh(); setNotice(`Invoice ${invoice.number} saved in customer history.`);
     } catch (e) { setNotice(e.message); }
   };
   const setStatus = async (id, status) => {
-    try { await fetch(`/api/invoices/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }); await refresh(); }
+    try { await apiFetch(`/api/invoices/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) }); await refresh(); }
     catch (e) { setError(e.message); }
   };
   const saveCustomer = async (payload, id = null) => {
-    const response = await fetch(id ? `/api/customers/${id}` : '/api/customers', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const response = await apiFetch(id ? `/api/customers/${id}` : '/api/customers', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not save customer.');
     if (id) { await refresh(); setSelectedCustomer(id); setCustomerToEdit(null); setShowCustomerForm(false); setView('customers'); return; }
@@ -73,13 +74,13 @@ export default function App() {
     setSelectedCustomer(result.id); setShowCustomerForm(false); setView('invoice');
   };
   const saveBusiness = async (payload) => {
-    const response = await fetch('/api/business', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const response = await apiFetch('/api/business', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not save the business profile.');
     await refresh(); setNotice('Business profile saved. New invoices will use these details.');
   };
   const saveAccount = async (payload) => {
-    const response = await fetch('/api/account', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const response = await apiFetch('/api/account', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Could not save your profile.');
     await refresh(); setNotice('Your personal profile has been saved.');
@@ -96,6 +97,7 @@ export default function App() {
     </aside>
     <main className="main-area">
       <header className="topbar"><div className="breadcrumbs"><span>Workspace</span><b>/</b><strong>{navigation.find((n) => n[0] === view)?.[2] || 'Workspace'}</strong></div><div className="top-actions"><span className="today-chip">{now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span><span className="top-avatar">{initials || 'ME'}</span></div></header>
+      {STATIC_HOSTING && <div className="static-mode-note" role="status"><strong>Browser-only version:</strong> your data stays in this browser and is not shared between devices. PDF downloads from this site are not digitally signed.</div>}
       {error && <div className="api-error" role="alert">{error}<button onClick={() => refresh().catch((e) => setError(e.message))}>Try again</button></div>}
       {loading ? <div className="loading-card"><span className="spinner" /> Connecting to your local workspace…</div> : <Routes>
         <Route path="/" element={<Dashboard onNew={goNew} onOpen={openInvoice} onStatus={setStatus} />} />

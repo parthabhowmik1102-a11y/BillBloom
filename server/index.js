@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createLocalInvoiceSigner } from './signing.js';
+import { log } from './logger.js';
+import { sendValidationError, validateCustomer, validateInvoice, validateProduct, validateProfile, validateStatus } from './validation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, 'data');
@@ -56,6 +58,18 @@ sampleData.products.forEach((product, index) => insertProduct.run(`prd-${index +
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  const requestId = randomUUID();
+  res.setHeader('X-Request-Id', requestId);
+  res.on('finish', () => {
+    const status = res.statusCode;
+    log(status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info', 'http_request', {
+      requestId, method: req.method, path: req.path, status, durationMs: Date.now() - startedAt,
+    });
+  });
+  next();
+});
 const getBusiness = () => JSON.parse(db.prepare('SELECT payload FROM business_profile WHERE id=?').get('default').payload);
 const getAccount = () => JSON.parse(db.prepare('SELECT payload FROM account_profile WHERE id=?').get('default').payload);
 const allCustomers = () => db.prepare('SELECT * FROM customers ORDER BY name').all();
@@ -85,21 +99,23 @@ app.post('/api/sign-pdf', express.raw({ type: 'application/pdf', limit: '15mb' }
     const signedPdf = await invoiceSigner.sign(req.body, safeNumber);
     res.type('application/pdf').set('Content-Disposition', `attachment; filename="${safeNumber.replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf"`).send(signedPdf);
   } catch (error) {
-    console.error('PDF signing failed:', error.message);
+    log('error', 'pdf_signing_failed', { message: error.message });
     res.status(500).json({ error: 'BillBloom could not sign this PDF. Please try exporting again.' });
   }
 });
 app.put('/api/account', (req, res) => {
-  const account = { ...defaultAccount, ...(req.body || {}) };
-  if (!account.name?.trim()) return res.status(400).json({ error: 'Your name is required.' });
+  const validation = validateProfile(req.body, 'account');
+  if (!validation.ok) return sendValidationError(res, validation);
+  const account = { ...defaultAccount, ...validation.value };
   account.name = account.name.trim();
   db.prepare('INSERT INTO account_profile (id,payload) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload')
     .run('default', JSON.stringify(account));
   res.json(account);
 });
 app.put('/api/business', (req, res) => {
-  const profile = { ...defaultBusiness, ...(req.body || {}) };
-  if (!profile.name?.trim()) return res.status(400).json({ error: 'Business name is required.' });
+  const validation = validateProfile(req.body, 'business');
+  if (!validation.ok) return sendValidationError(res, validation);
+  const profile = { ...defaultBusiness, ...validation.value };
   profile.name = profile.name.trim();
   db.prepare('INSERT INTO business_profile (id,payload) VALUES (?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload')
     .run('default', JSON.stringify(profile));
@@ -107,20 +123,22 @@ app.put('/api/business', (req, res) => {
 });
 app.get('/api/customers', (_req, res) => res.json(allCustomers()));
 app.post('/api/customers', (req, res) => {
-  const { id, name, email = '', phone = '', gstin = '', address = '', state = '' } = req.body || {};
-  if (!name?.trim()) return res.status(400).json({ error: 'Customer name is required.' });
-  const customerId = id || `cus-${randomUUID()}`;
+  const validation = validateCustomer(req.body);
+  if (!validation.ok) return sendValidationError(res, validation);
+  const { name, email, phone, gstin, address, state } = validation.value;
+  const customerId = `cus-${randomUUID()}`;
   try {
     db.prepare(`INSERT INTO customers (id,name,email,phone,gstin,address,state,created_at) VALUES (?,?,?,?,?,?,?,?)`)
-      .run(customerId, name.trim(), email.trim(), phone.trim(), gstin.trim(), address.trim(), state.trim() || 'Maharashtra', new Date().toISOString());
+      .run(customerId, name, email, phone, gstin, address, state || 'Maharashtra', new Date().toISOString());
     res.status(201).json(db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId));
   } catch (error) { res.status(400).json({ error: error.message }); }
 });
 app.put('/api/customers/:id', (req, res) => {
-  const { name, email = '', phone = '', gstin = '', address = '', state = '' } = req.body || {};
-  if (!name?.trim()) return res.status(400).json({ error: 'Customer name is required.' });
+  const validation = validateCustomer(req.body);
+  if (!validation.ok) return sendValidationError(res, validation);
+  const { name, email, phone, gstin, address, state } = validation.value;
   const result = db.prepare('UPDATE customers SET name=?,email=?,phone=?,gstin=?,address=?,state=? WHERE id=?')
-    .run(name.trim(), email.trim(), phone.trim(), gstin.trim(), address.trim(), state.trim(), req.params.id);
+    .run(name, email, phone, gstin, address, state, req.params.id);
   if (!result.changes) return res.status(404).json({ error: 'Customer not found.' });
   res.json(db.prepare('SELECT * FROM customers WHERE id = ?').get(req.params.id));
 });
@@ -131,24 +149,27 @@ app.delete('/api/customers/:id', (req, res) => {
   res.status(204).end();
 });
 app.post('/api/products', (req, res) => {
-  const { name, description = '', hsn = '', unit = 'pcs', price = 0, gst = 18 } = req.body || {};
-  if (!name?.trim()) return res.status(400).json({ error: 'Product name is required.' });
+  const validation = validateProduct(req.body);
+  if (!validation.ok) return sendValidationError(res, validation);
+  const { name, description, hsn, unit, price, gst } = validation.value;
   const id = `prd-${randomUUID()}`;
   db.prepare('INSERT INTO products (id,name,description,hsn,unit,price,gst) VALUES (?,?,?,?,?,?,?)')
-    .run(id, name.trim(), description.trim(), hsn.trim(), unit, Number(price) || 0, Number(gst) || 0);
+    .run(id, name, description, hsn, unit || 'pcs', price, gst);
   res.status(201).json(db.prepare('SELECT * FROM products WHERE id=?').get(id));
 });
 app.put('/api/products/:id', (req, res) => {
-  const { name, description = '', hsn = '', unit = 'pcs', price = 0, gst = 18 } = req.body || {};
-  if (!name?.trim()) return res.status(400).json({ error: 'Product name is required.' });
+  const validation = validateProduct(req.body);
+  if (!validation.ok) return sendValidationError(res, validation);
+  const { name, description, hsn, unit, price, gst } = validation.value;
   const result = db.prepare('UPDATE products SET name=?,description=?,hsn=?,unit=?,price=?,gst=? WHERE id=?')
-    .run(name.trim(), description.trim(), hsn.trim(), unit.trim() || 'pcs', Number(price) || 0, Number(gst) || 0, req.params.id);
+    .run(name, description, hsn, unit || 'pcs', price, gst, req.params.id);
   if (!result.changes) return res.status(404).json({ error: 'Catalog item not found.' });
   res.json(db.prepare('SELECT * FROM products WHERE id=?').get(req.params.id));
 });
 app.post('/api/invoices', (req, res) => {
-  const invoice = req.body || {};
-  if (!invoice.id || !invoice.number || !invoice.customerId) return res.status(400).json({ error: 'Invoice, number, and customer are required.' });
+  const validation = validateInvoice(req.body);
+  if (!validation.ok) return sendValidationError(res, validation);
+  const invoice = validation.value;
   const customer = db.prepare('SELECT id FROM customers WHERE id=?').get(invoice.customerId);
   if (!customer) return res.status(400).json({ error: 'Choose a saved customer before saving this invoice.' });
   const payload = JSON.stringify(invoice);
@@ -161,8 +182,8 @@ app.post('/api/invoices', (req, res) => {
   } catch (error) { res.status(400).json({ error: error.message }); }
 });
 app.patch('/api/invoices/:id/status', (req, res) => {
-  const valid = ['Draft', 'Sent', 'Paid', 'Overdue'];
-  if (!valid.includes(req.body?.status)) return res.status(400).json({ error: 'Invalid invoice status.' });
+  const validation = validateStatus(req.body);
+  if (!validation.ok) return sendValidationError(res, validation);
   const row = db.prepare('SELECT payload FROM invoices WHERE id=?').get(req.params.id);
   if (!row) return res.status(404).json({ error: 'Invoice not found.' });
   const invoice = JSON.parse(row.payload);
@@ -181,5 +202,10 @@ if (fs.existsSync(dist)) {
   app.use(express.static(dist));
   app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 }
+app.use((error, req, res, _next) => {
+  log('error', 'request_failed', { requestId: res.getHeader('X-Request-Id'), method: req.method, path: req.path, message: error.message });
+  if (res.headersSent) return;
+  res.status(500).json({ error: 'An unexpected server error occurred.', requestId: res.getHeader('X-Request-Id') });
+});
 const port = Number(process.env.PORT) || 3001;
-app.listen(port, '127.0.0.1', () => console.log(`BillBloom API ready at http://localhost:${port}`));
+app.listen(port, '127.0.0.1', () => log('info', 'server_started', { address: `http://localhost:${port}` }));

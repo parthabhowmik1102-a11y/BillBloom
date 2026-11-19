@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { useAppContext } from './AppContext.jsx';
+import { invoiceTotals } from './invoice-calculations.js';
+import { STATIC_HOSTING } from './static-api.js';
 
 const BUSINESS = { name: 'BillBloom Studio', owner: 'Aarav Mehta', gstin: '27AAEPM1234C1Z8', address: '204, Lotus Business Park, Pune, Maharashtra 411001', phone: '+91 98765 10020', email: 'hello@billbloom.in', state: 'Maharashtra', upi: 'billbloom.demo@upi' };
 const GST = [0, 5, 12, 18, 28];
@@ -16,13 +18,7 @@ export const makeInvoice = () => {
     { id: uid(), productId: 'prd-3', name: 'SSD 512 GB', description: 'NVMe solid-state drive, 512 GB', hsn: '852351', unit: 'pcs', quantity: 1, price: 3200, gst: 18 },
   ] };
 };
-export const invoiceTotals = (invoice) => {
-  const subtotal = invoice.items.reduce((s, i) => s + Math.max(0, Number(i.quantity) || 0) * Math.max(0, Number(i.price) || 0), 0);
-  const discount = subtotal * Math.min(100, Math.max(0, Number(invoice.discountRate) || 0)) / 100;
-  const taxable = Math.max(0, subtotal - discount);
-  const tax = invoice.items.reduce((s, i) => { const line = (Number(i.quantity) || 0) * (Number(i.price) || 0); return s + (subtotal ? line * taxable / subtotal : 0) * (Number(i.gst) || 0) / 100; }, 0);
-  return { subtotal, discount, taxable, tax, total: Math.round((taxable + tax) * 100) / 100 };
-};
+export { invoiceTotals } from './invoice-calculations.js';
 
 export default function InvoiceEditor({ invoice, setInvoice, editingSaved = false, onSave, onAddCustomer, notice }) {
   const { data } = useAppContext();
@@ -57,6 +53,7 @@ export default function InvoiceEditor({ invoice, setInvoice, editingSaved = fals
   const buildAndSignPdf = async () => {
     const { default: html2pdf } = await import('html2pdf.js');
     const rawPdf = await html2pdf().set({ margin: format === 'A4' ? 8 : 3, filename: `${invoice.number || 'invoice'}.pdf`, image: { type: 'jpeg', quality: .98 }, html2canvas: { scale: 2, backgroundColor: '#fff' }, jsPDF: { unit: 'mm', format: format === 'A4' ? 'a4' : [80, 220], orientation: 'portrait' }, pagebreak: { mode: ['css', 'legacy'] } }).from(preview.current).outputPdf('blob');
+    if (STATIC_HOSTING) return rawPdf;
     const response = await fetch('/api/sign-pdf', { method: 'POST', headers: { 'Content-Type': 'application/pdf', 'X-Invoice-Number': String(invoice.number || '').replace(/[\r\n]/g, '').slice(0, 80) }, body: rawPdf });
     if (!response.ok) { const error = await response.json().catch(() => ({})); throw new Error(error.error || 'Could not sign the invoice PDF.'); }
     return response.blob();
@@ -67,8 +64,8 @@ export default function InvoiceEditor({ invoice, setInvoice, editingSaved = fals
     window.setTimeout(() => URL.revokeObjectURL(url), 1500);
   };
   const exportPdf = async () => {
-    setBusyAction('pdf'); setExportMessage('Preparing and digitally signing your invoice…');
-    try { const pdf = await buildAndSignPdf(); downloadBlob(pdf, `${invoice.number || 'invoice'}.pdf`); setExportMessage('Signed invoice PDF downloaded. Its local signing certificate is included.'); }
+    setBusyAction('pdf'); setExportMessage(STATIC_HOSTING ? 'Preparing your invoice PDF…' : 'Preparing and digitally signing your invoice…');
+    try { const pdf = await buildAndSignPdf(); downloadBlob(pdf, `${invoice.number || 'invoice'}.pdf`); setExportMessage(STATIC_HOSTING ? 'Invoice PDF downloaded. GitHub Pages cannot digitally sign files.' : 'Signed invoice PDF downloaded. Its local signing certificate is included.'); }
     catch (error) { setExportMessage(error.message); }
     finally { setBusyAction(''); }
   };
